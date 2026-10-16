@@ -7,33 +7,12 @@ import sys
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.patches as mpatches
-
-def load_csv(path: str) -> pd.DataFrame:
-    """Function that receive Dataset in csv format,
-    and return it as Pandas DataFrame if none error occured."""
-
-    try:
-        if not isinstance(path, str):
-            raise TypeError("path must be a string.")
-        if not path.lower().endswith((".csv")):
-            raise ValueError("file extension must be .csv")
-
-        df = pd.read_csv(path)
-
-        if df.empty:
-            raise ValueError("csv file is empty.")
-
-        return df
-
-    except (TypeError, ValueError, KeyError,
-            FileNotFoundError, PermissionError,
-            IsADirectoryError) as error:
-        print(f"{type(error).__name__}: {error}")
-        sys.exit(1)
-
+from load_data import load_data
 
 def disp_histogram(df: pd.DataFrame):
-    """Create and display all histogram."""
+    """Create and display all histogram, to answer the question:
+        Which Hogwarts course has homogeneous score distribution
+        between all four houses?"""
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns
     if 'Index' in numeric_cols:
         numeric_cols = numeric_cols.drop('Index')
@@ -83,19 +62,18 @@ def disp_histogram(df: pd.DataFrame):
 
 
 def main():
-    """Run the script and get the file as param"""
+    """Run the script and get the file as parameter."""
 
     ac = len(sys.argv)
 
     try:
-        assert ac == 2, "the program must take one .csv file as param."
+        assert ac == 2, "the program must take one .csv file as argument."
     except AssertionError as error:
         print(f"{type(error).__name__}: {error}")
         sys.exit(1)
 
-    df = load_csv(sys.argv[1])
+    df = load_data(sys.argv[1])
     disp_histogram(df)
-    print(df)
 
 
 if __name__ == "__main__":
