@@ -4,10 +4,12 @@ The data must be a .cvs file."""
 
 import pandas as pd
 import sys
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.patches as mpatches
 from load_data import load_data
+
 
 def disp_histogram(df: pd.DataFrame):
     """Create and display all histogram, to answer the question:
@@ -45,19 +47,30 @@ def disp_histogram(df: pd.DataFrame):
         fig.delaxes(axes[j])
 
     fig.subplots_adjust(top=0.88, bottom=0.12, hspace=0.6, wspace=0.5)
-    fig.suptitle("Distribution of matter for each House of Hogwarts", 
+    fig.suptitle("Distribution of matter for each House of Hogwarts",
                  fontsize=25, fontweight='bold', y=0.95)
 
     houses = sorted(df["Hogwarts House"].dropna().unique())
     colors = sns.color_palette("Set1", len(houses))
-    patches = [mpatches.Patch(color=colors[i], label=houses[i]) for i in range(len(houses))]
-    
+    patches = [mpatches.Patch(color=colors[i],
+                              label=houses[i]) for i in range(len(houses))]
+
     fig.legend(handles=patches, loc='lower center', ncol=4,
                bbox_to_anchor=(0.5, 0.02), fontsize=12)
+
+    out_dir = "plots"
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(os.path.join(out_dir, "histogram.png"), dpi=150)
+    except PermissionError:
+        print(f"Error: no write permission on '{out_dir}'.")
+    except OSError as error:
+        print(f"Error: could not save figure: {error}.")
+
     try:
         plt.show()
     except KeyboardInterrupt:
-        print("Histogram display canceled.")
+        print("\nHistogram display closed.")
         sys.exit(0)
 
 
@@ -78,4 +91,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
