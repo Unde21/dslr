@@ -17,8 +17,8 @@ def load_data(path: str) -> pd.DataFrame:
         df = pd.read_csv(path)
         if df.empty:
             raise ValueError("csv file is empty")
-        df_clean = df.dropna()
-        return df_clean
+
+        return df
 
     except (TypeError, ValueError, FileNotFoundError,
             PermissionError, IsADirectoryError) as error:

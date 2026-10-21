@@ -5,7 +5,7 @@ import pandas as pd
 import sys
 import os
 import matplotlib.pyplot as plt
-from load_data import load_data
+from utils.load_data import load_data
 
 
 def disp_scalter_plot(df: pd.DataFrame):
@@ -85,11 +85,8 @@ def main():
     """Run the script and get the file as parameter."""
 
     ac = len(sys.argv)
-
-    try:
-        assert ac == 2, "the program must take one .csv file as argument."
-    except AssertionError as error:
-        print(f"{type(error).__name__}: {error}")
+    if ac != 2:
+        print("the program must take one .csv file as argument.")
         sys.exit(1)
 
     df = load_data(sys.argv[1])
