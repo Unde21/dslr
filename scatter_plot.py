@@ -70,9 +70,11 @@ def disp_scalter_plot(df: pd.DataFrame):
         os.makedirs(out_dir, exist_ok=True)
         plt.savefig(os.path.join(out_dir, "scatter_plot.png"), dpi=150)
     except PermissionError:
-        print(f"Error: no write permission on '{out_dir}'.")
+        print(f"Error: no write permission on '{out_dir}'.",
+              file=sys.stderr)
     except OSError as error:
-        print(f"Error: could not save figure: {error}.")
+        print(f"Error: could not save figure: {error}.",
+              file=sys.stderr)
 
     try:
         plt.show()
@@ -86,7 +88,8 @@ def main():
 
     ac = len(sys.argv)
     if ac != 2:
-        print("the program must take one .csv file as argument.")
+        print("Error: the program must take one .csv file as argument.",
+              file=sys.stderr)
         sys.exit(1)
 
     df = load_data(sys.argv[1])

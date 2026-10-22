@@ -12,7 +12,8 @@ def main():
 
     ac = len(sys.argv)
     if ac != 2:
-        print("the program must take one .csv file as argument.")
+        print("Error: the program must take one .csv file as argument.",
+              file=sys.stderr)
         sys.exit(1)
 
     df = load_data(sys.argv[1])
