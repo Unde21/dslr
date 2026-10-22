@@ -53,5 +53,17 @@ def calc_cost(h: np.ndarray, y: np.ndarray) -> float:
     all_cost = y * np.log(clipped_h) + (1 - y) * np.log(1 - clipped_h)
     mean = ft_vec_mean(all_cost)
     J = - mean
-    print(J)
+
     return J
+
+
+def calc_gradient(X: np.ndarray, h: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Compute the gradient of the log loss for each theta:
+    mean over the students of (h - y) * x_j, i.e. X.T @ (h - y) / m.
+    X must contain the bias column, so theta0 is handled like the others.
+    Return one value per theta, shape (features + 1,)."""
+
+    error = h - y
+    gradient = (X.T @ error) / y.shape[0]
+
+    return gradient
