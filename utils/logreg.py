@@ -33,3 +33,25 @@ def predict_proba(X, theta) -> np.ndarray:
     z = X @ theta
     h = sigmoid(z)
     return h
+
+
+def ft_vec_mean(arr: np.ndarray) -> float:
+    """Return the mean of a numpy array, vectorized.
+    Unlike ft_mean (utils/stats.py), it does not loop in Python:
+    used in the model computations, which run many times."""
+
+    return np.sum(arr) / len(arr)
+
+
+def calc_cost(h: np.ndarray, y: np.ndarray) -> float:
+    """Compute the log loss J between the predictions h and the
+    true labels y (0 or 1): -mean(y*log(h) + (1-y)*log(1-h)).
+    h is clipped to avoid log(0).
+    Return 0 for perfect predictions, about 0.693 when h = 0.5."""
+
+    clipped_h = np.clip(h,  1e-15, 1 - (1e-15))
+    all_cost = y * np.log(clipped_h) + (1 - y) * np.log(1 - clipped_h)
+    mean = ft_vec_mean(all_cost)
+    J = - mean
+    print(J)
+    return J
