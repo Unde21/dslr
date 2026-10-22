@@ -4,10 +4,13 @@ Usage: python3 logreg_train.py dataset_train.csv"""
 
 import sys
 import pandas as pd
+import numpy as np
 from utils.load_data import load_data
 from utils.stats import ft_mean
 from utils.stats import ft_std
 from utils.stats import ft_count
+from utils.logreg import add_bias_column
+from utils.logreg import predict_proba
 
 FEATURE = [
     "Defense Against the Dark Arts",
@@ -68,21 +71,22 @@ def binary_labels(houses: pd.Series, house: str) -> pd.Series:
     return labels
 
 
-def main():
-    """Main function that run the logistic regression training."""
-
-    ac = len(sys.argv)
-    if ac != 2:
-        print("Error: the program must take one .csv file as argument.",
-              file=sys.stderr)
-        sys.exit(1)
-
-    df = load_data(sys.argv[1])
+def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+    """Select the FEATURE columns, then fill NaN and normalize them.
+    Return the normalized features and the {feature: (mean, std)}
+    used, to be saved for the prediction."""
 
     feature_df = df[FEATURE]
     norm_params = calc_mean_std(feature_df)
     x_norm = normalize(feature_df, norm_params)
-    # print(f"{x_norm.describe()}")
+    return x_norm, norm_params
+
+
+def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
+    """Get the houses from the 'Hogwarts House' column.
+    Return the sorted list of house names and the column itself
+    (one true house per student).
+    Exit if the column is missing or contains no house."""
 
     try:
         houses_names = sorted(df["Hogwarts House"].dropna().unique())
@@ -97,11 +101,37 @@ def main():
               " Use the training dataset.", file=sys.stderr)
         sys.exit(1)
 
-    labels_per_house = []
-    for house in houses_names:
-        labels = binary_labels(true_houses, house)
-        labels_per_house.append(labels)
-        print(sum(labels))
+    return houses_names, true_houses
+
+
+def main():
+    """Main function that run the logistic regression training."""
+
+    ac = len(sys.argv)
+    if ac != 2:
+        print("Error: the program must take one .csv file as argument.",
+              file=sys.stderr)
+        sys.exit(1)
+
+    df = load_data(sys.argv[1])
+
+    houses_names, true_houses = get_houses(df)
+
+    x_norm, norm_params = prepare_features(df)
+    # print(f"{x_norm.describe()}")
+
+    # labels_per_house = []
+    # for house in houses_names:
+    #     labels = binary_labels(true_houses, house)
+    #     labels_per_house.append(labels)
+    #     print(sum(labels))
+
+    X = add_bias_column(x_norm)
+    print(X)
+
+    theta = np.zeros(X.shape[1])
+    h = predict_proba(X, theta)
+    print(h)
 
 
 if __name__ == "__main__":
