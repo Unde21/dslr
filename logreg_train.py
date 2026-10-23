@@ -64,13 +64,15 @@ def binary_labels(houses: pd.Series, house: str) -> pd.Series:
     return labels
 
 
-def prepare_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
-    """Select the FEATURE columns, then fill NaN and normalize them.
+def fit_features(df: pd.DataFrame,
+                 features=FEATURE) -> tuple[pd.DataFrame, dict]:
+    """Select the features columns (FEATURE by default), then fill NaN
+    and normalize them.
     Return the normalized features and the
     {feature: {"mean": mean, "std": std}} used, to be saved
     for the prediction."""
 
-    feature_df = df[FEATURE]
+    feature_df = df[features]
     norm_params = calc_mean_std(feature_df)
     x_norm = normalize(feature_df, norm_params)
     return x_norm, norm_params
@@ -98,26 +100,30 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
     return house_names, true_houses
 
 
-def train_classifier(X: np.ndarray, y: np.ndarray) -> np.ndarray:
+def train_classifier(X: np.ndarray, y: np.ndarray,
+                     n_iterations=N_ITERATIONS, learning_rate=LEARNING_RATE,
+                     precision=PRECISION) -> np.ndarray:
     """Train one binary classifier by gradient descent.
     Start from theta = 0, then at each iteration:
-    predict h, compute the gradient, theta -= LEARNING_RATE * gradient.
-    Early stopping: stop when the cost changes by less than PRECISION
-    between two iterations, or after N_ITERATIONS at most.
+    predict h, compute the gradient, theta -= learning_rate * gradient.
+    Early stopping: stop when the cost changes by less than precision
+    between two iterations, or after n_iterations at most.
+    The hyperparameters default to LEARNING_RATE, PRECISION
+    and N_ITERATIONS.
     Print the cost every 400 iterations to follow the training.
     Return the trained theta, shape (features + 1,)."""
 
     theta = np.zeros(X.shape[1])
     delta_cost, tmp_cost, cost = 0, 0, 0
 
-    for i in range(N_ITERATIONS):
+    for i in range(n_iterations):
         h = predict_proba(X, theta)
         gradient = calc_gradient(X, h, y)
-        theta = theta - LEARNING_RATE * gradient
+        theta = theta - learning_rate * gradient
         tmp_cost = calc_cost(h, y)
         delta_cost = abs(cost - tmp_cost)
         cost = tmp_cost
-        if delta_cost < PRECISION:
+        if delta_cost < precision:
             print(f"converged at iteration {i},"
                   f" cost: {cost}.")
             break
@@ -130,10 +136,13 @@ def train_classifier(X: np.ndarray, y: np.ndarray) -> np.ndarray:
 
 
 def train_one_vs_all(X: np.ndarray, house_names: list,
-                     true_houses: pd.Series) -> dict:
+                     true_houses: pd.Series, n_iterations=N_ITERATIONS,
+                     learning_rate=LEARNING_RATE, precision=PRECISION) -> dict:
     """Train one binary classifier per house (one-vs-all):
     for each house, build its 0/1 labels from true_houses,
     then train a theta on X.
+    n_iterations, learning_rate and precision are passed
+    to train_classifier.
     Return a dict {house: theta}, theta as a numpy array."""
 
     # labels_per_house = []
@@ -144,20 +153,23 @@ def train_one_vs_all(X: np.ndarray, house_names: list,
         y = np.asarray(labels)
 
         print("=" * 64, f"\n{house}")
-        theta_houses[house] = train_classifier(X, y)
+        theta_houses[house] = train_classifier(X, y, n_iterations=n_iterations,
+                                               learning_rate=learning_rate,
+                                               precision=precision)
 
     return theta_houses
 
 
-def save_data(norm_params: dict, theta_houses: dict) -> None:
-    """Save the model to weights.json: the ordered FEATURE list,
+def save_data(norm_params: dict, theta_houses: dict, features=FEATURE) -> None:
+    """Save the model to weights.json: the ordered features list
+    used for the training (FEATURE by default),
     the normalization params and the theta of each house
     (converted to lists, as numpy arrays are not JSON serializable).
     Exit if the file can not be written."""
 
     thetas = {name: arr.tolist() for name, arr in theta_houses.items()}
     data = {
-        "features": FEATURE,
+        "features": features,
         "norm_params": norm_params,
         "thetas": thetas
     }
@@ -186,7 +198,7 @@ def main():
 
     house_names, true_houses = get_houses(df)
 
-    x_norm, norm_params = prepare_features(df)
+    x_norm, norm_params = fit_features(df)
     # print(f"{x_norm.describe()}")
     X = add_bias_column(x_norm)
     # print(X)

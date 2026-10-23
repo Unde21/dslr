@@ -53,7 +53,7 @@ def load_weights(filepath: str) -> dict:
         sys.exit(1)
 
 
-def prepare_features(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
+def apply_features(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
     """Select the features used for the training, then fill NaN and
     normalize them with the norm_params saved in weights
     (the training mean and std, not recomputed on df).
@@ -98,7 +98,7 @@ def main():
     df = load_data(sys.argv[1])
     model = load_weights(sys.argv[2])
 
-    x_norm = prepare_features(df, model)
+    x_norm = apply_features(df, model)
     X = add_bias_column(x_norm)
 
     probas_matrix, house_names = predict_probas(X, model)
