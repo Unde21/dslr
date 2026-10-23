@@ -35,6 +35,41 @@ def predict_proba(X, theta) -> np.ndarray:
     return h
 
 
+def predict_probas(X: np.ndarray, model: dict) -> tuple[np.ndarray, list]:
+    """Compute, for each student, the probability of belonging to
+    each house, with the trained thetas of model.
+    Return a matrix of shape (n, houses): one row per student,
+    one column per house, and the house names in the column order."""
+
+    houses_name = list(model["thetas"])
+    probas = []
+
+    for house in houses_name:
+        theta = np.asarray(model["thetas"][house])
+        proba = predict_proba(X, theta)
+        probas.append(proba)
+
+    probas_matrix = np.asarray(probas).T
+    # print(probas_matrix.shape)
+
+    return probas_matrix, houses_name
+
+
+def predict_houses(probas_matrix: np.ndarray, houses_name: list) -> list:
+    """Pick, for each student, the house with the highest probability
+    (one-vs-all). houses_name must be in the column order of
+    probas_matrix. Return one house name per student."""
+
+    best_index = np.argmax(probas_matrix, axis=1)
+    # print(best_index)
+    predicted_houses = []
+    for i in best_index:
+        predicted_houses.append(houses_name[i])
+    # print(predicted_houses)
+
+    return predicted_houses
+
+
 def ft_vec_mean(arr: np.ndarray) -> float:
     """Return the mean of a numpy array, vectorized.
     Unlike ft_mean (utils/stats.py), it does not loop in Python:
