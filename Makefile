@@ -34,6 +34,9 @@ train: $(VENV)
 predict: $(VENV)
 	$(PYTHON) logreg_predict.py $(TEST) $(WEIGHTS)
 
+evaluate: $(VENV)
+	$(PYTHON) evaluate.py $(TRAIN)
+
 clean:
 	find . -name "__pycache__" -type d -prune -exec rm -rf {} +
 	rm -rf plots
@@ -47,4 +50,4 @@ lint: $(VENV)
 
 re: fclean all
 
-.PHONY: all install lint describe histogram scatter pair plots train predict clean fclean re
+.PHONY: all install lint describe histogram scatter pair plots train predict evaluate clean fclean re
