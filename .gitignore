@@ -1,3 +1,6 @@
 __pycache__
 plots
 .venv
+weights.json
+houses.csv
+
