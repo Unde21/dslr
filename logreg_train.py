@@ -83,19 +83,19 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
     Exit if the column is missing or contains no house."""
 
     try:
-        houses_names = sorted(df["Hogwarts House"].dropna().unique())
+        house_names = sorted(df["Hogwarts House"].dropna().unique())
         true_houses = df["Hogwarts House"]
     except KeyError:
         print("Error: column 'Hogwarts House'"
               " not found in the dataset.", file=sys.stderr)
         sys.exit(1)
 
-    if not houses_names:
+    if not house_names:
         print("Error: column 'Hogwarts House' contains no house."
               " Use the training dataset.", file=sys.stderr)
         sys.exit(1)
 
-    return houses_names, true_houses
+    return house_names, true_houses
 
 
 def train_classifier(X: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -129,7 +129,7 @@ def train_classifier(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     return theta
 
 
-def train_one_vs_all(X: np.ndarray, houses_name: list,
+def train_one_vs_all(X: np.ndarray, house_names: list,
                      true_houses: pd.Series) -> dict:
     """Train one binary classifier per house (one-vs-all):
     for each house, build its 0/1 labels from true_houses,
@@ -138,7 +138,7 @@ def train_one_vs_all(X: np.ndarray, houses_name: list,
 
     # labels_per_house = []
     theta_houses = {}
-    for house in houses_name:
+    for house in house_names:
         labels = binary_labels(true_houses, house)
 
         y = np.asarray(labels)
@@ -184,13 +184,13 @@ def main():
 
     df = load_data(sys.argv[1])
 
-    houses_name, true_houses = get_houses(df)
+    house_names, true_houses = get_houses(df)
 
     x_norm, norm_params = prepare_features(df)
     # print(f"{x_norm.describe()}")
     X = add_bias_column(x_norm)
     # print(X)
-    theta_houses = train_one_vs_all(X, houses_name, true_houses)
+    theta_houses = train_one_vs_all(X, house_names, true_houses)
     # print("=" * 45, "\ntheta for each houses")
     # print(theta_houses)
     save_data(norm_params, theta_houses)

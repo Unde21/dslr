@@ -41,10 +41,10 @@ def predict_probas(X: np.ndarray, model: dict) -> tuple[np.ndarray, list]:
     Return a matrix of shape (n, houses): one row per student,
     one column per house, and the house names in the column order."""
 
-    houses_name = list(model["thetas"])
+    house_names = list(model["thetas"])
     probas = []
 
-    for house in houses_name:
+    for house in house_names:
         theta = np.asarray(model["thetas"][house])
         proba = predict_proba(X, theta)
         probas.append(proba)
@@ -52,19 +52,19 @@ def predict_probas(X: np.ndarray, model: dict) -> tuple[np.ndarray, list]:
     probas_matrix = np.asarray(probas).T
     # print(probas_matrix.shape)
 
-    return probas_matrix, houses_name
+    return probas_matrix, house_names
 
 
-def predict_houses(probas_matrix: np.ndarray, houses_name: list) -> list:
+def predict_houses(probas_matrix: np.ndarray, house_names: list) -> list:
     """Pick, for each student, the house with the highest probability
-    (one-vs-all). houses_name must be in the column order of
+    (one-vs-all). house_names must be in the column order of
     probas_matrix. Return one house name per student."""
 
     best_index = np.argmax(probas_matrix, axis=1)
     # print(best_index)
     predicted_houses = []
     for i in best_index:
-        predicted_houses.append(houses_name[i])
+        predicted_houses.append(house_names[i])
     # print(predicted_houses)
 
     return predicted_houses

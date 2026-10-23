@@ -64,20 +64,20 @@ def prepare_features(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
     return x_norm
 
 
-def save_predictions(df: pd.Series, predicted_houses: list) -> None:
+def save_predictions(student_index: pd.Series,
+                     predicted_houses: list) -> None:
     """Write houses.csv in the format of the subject:
     'Index,Hogwarts House', one line per student.
-    df is the 'Index' column of the dataset, in the same order
-    as predicted_houses. Exit if the file can not be written."""
+    student_index is the 'Index' column of the dataset, in the same
+    order as predicted_houses. Exit if the file can not be written."""
 
-    index = np.asarray(df)
-    new_df = pd.DataFrame({
-        "Index": index,
+    predictions = pd.DataFrame({
+        "Index": np.asarray(student_index),
         "Hogwarts House": predicted_houses
     })
 
     try:
-        new_df.to_csv("houses.csv", index=False)
+        predictions.to_csv("houses.csv", index=False)
     except (PermissionError, IsADirectoryError, OSError) as error:
         print(f"Error: cannot write '{error.filename}': "
               f"{(error.strerror or str(error)).lower()}.",
@@ -101,8 +101,8 @@ def main():
     x_norm = prepare_features(df, model)
     X = add_bias_column(x_norm)
 
-    probas_matrix, houses_name = predict_probas(X, model)
-    predicted_houses = predict_houses(probas_matrix, houses_name)
+    probas_matrix, house_names = predict_probas(X, model)
+    predicted_houses = predict_houses(probas_matrix, house_names)
     save_predictions(df["Index"], predicted_houses)
 
 
