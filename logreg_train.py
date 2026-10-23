@@ -7,14 +7,11 @@ import pandas as pd
 import numpy as np
 import json
 from utils.load_data import load_data
-from utils.stats import ft_mean
-from utils.stats import ft_std
-from utils.stats import ft_count
-from utils.logreg import add_bias_column
-from utils.logreg import predict_proba
-from utils.logreg import calc_cost
-from utils.logreg import calc_gradient
-# import utils as u
+from utils.stats import (ft_mean, ft_std, ft_count)
+from utils.logreg import (add_bias_column,
+                          predict_proba, calc_cost, calc_gradient)
+from utils.normalize import normalize
+
 
 FEATURE = [
     "Defense Against the Dark Arts",
@@ -29,7 +26,8 @@ FEATURE = [
 ]
 
 LEARNING_RATE = 0.5
-N_ITERATIONS = 2000
+N_ITERATIONS = 10000
+PRECISION = 1e-7
 
 
 def calc_mean_std(df: pd.DataFrame) -> dict:
@@ -54,21 +52,6 @@ def calc_mean_std(df: pd.DataFrame) -> dict:
         }
 
     return norm_params
-
-
-def normalize(df: pd.DataFrame, norm_params: dict) -> pd.DataFrame:
-    """Replace NaN by the column mean, then apply the z-score
-    (x - mean) / std to each column, using the values of norm_params.
-    df is not modified: return a normalized copy."""
-
-    df_norm = df.copy()
-
-    for col in df_norm:
-        df_norm[col] = df_norm[col].fillna(norm_params[col]["mean"])
-        df_norm[col] = (df_norm[col] - norm_params[col]["mean"])
-        df_norm[col] /= norm_params[col]["std"]
-
-    return df_norm
 
 
 def binary_labels(houses: pd.Series, house: str) -> pd.Series:
@@ -117,21 +100,32 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
 
 def train_classifier(X: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Train one binary classifier by gradient descent.
-    Start from theta = 0, then repeat N_ITERATIONS times:
-    predict h, compute the gradient, theta -= learning_rate * gradient.
-    Print the cost every 200 iterations to follow the training.
+    Start from theta = 0, then at each iteration:
+    predict h, compute the gradient, theta -= LEARNING_RATE * gradient.
+    Early stopping: stop when the cost changes by less than PRECISION
+    between two iterations, or after N_ITERATIONS at most.
+    Print the cost every 400 iterations to follow the training.
     Return the trained theta, shape (features + 1,)."""
 
     theta = np.zeros(X.shape[1])
+    delta_cost, tmp_cost, cost = 0, 0, 0
 
     for i in range(N_ITERATIONS):
         h = predict_proba(X, theta)
         gradient = calc_gradient(X, h, y)
         theta = theta - LEARNING_RATE * gradient
-        if i % 400 == 0:
-            cost = calc_cost(h, y)
-            print(cost)
+        tmp_cost = calc_cost(h, y)
+        delta_cost = abs(cost - tmp_cost)
+        cost = tmp_cost
+        if delta_cost < PRECISION:
+            print(f"converged at iteration {i},"
+                  f" cost: {cost}.")
+            break
 
+        if i % 400 == 0:
+            print(cost)
+    else:
+        print(f"reached max iterations, cost: {cost}.")
     return theta
 
 
@@ -149,7 +143,7 @@ def train_one_vs_all(X: np.ndarray, houses_name: list,
 
         y = np.asarray(labels)
 
-        print("=" * 45, f"\n{house}")
+        print("=" * 64, f"\n{house}")
         theta_houses[house] = train_classifier(X, y)
 
     return theta_houses
@@ -172,8 +166,10 @@ def save_data(norm_params: dict, theta_houses: dict) -> None:
         with open("weights.json", "w") as f:
             json.dump(data, f, indent=4)
 
-    except (PermissionError, OSError, IsADirectoryError) as error:
-        print(f"Error: failed to save data: {error}", file=sys.stderr)
+    except (PermissionError, IsADirectoryError, OSError) as error:
+        print(f"Error: cannot write '{error.filename}': "
+              f"{(error.strerror or str(error)).lower()}.",
+              file=sys.stderr)
         sys.exit(1)
 
 
