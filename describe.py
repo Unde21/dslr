@@ -1,5 +1,7 @@
-"""Main function that run the program that reproduice the
-    methods .describe()"""
+"""Display the statistics of each numeric feature of a dataset,
+like the .describe() of pandas, with extra fields (bonus).
+
+Usage: python3 describe.py dataset_train.csv"""
 
 from utils.load_data import load_data
 from utils.stats import ft_describe

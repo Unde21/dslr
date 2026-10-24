@@ -1,9 +1,24 @@
-"""Reproduce the function .describe()
+"""Reproduce the function .describe(), with extra fields (bonus).
 
 Every ft_* stat function expects `values` as a list WITHOUT NaN:
 the caller must clean the data before calling them."""
 
 import pandas as pd
+
+STATS_NAME = [
+    'count',
+    'mean',
+    'std',
+    'min',
+    '25%',
+    '50%',
+    '75%',
+    'max',
+    'missing',
+    'range',
+    'variance',
+    'IQR'
+]
 
 
 def ft_count(values) -> float:
@@ -85,7 +100,14 @@ def ft_percentile(values, count, percent: float) -> float:
 
 
 def ft_describe(df: pd.DataFrame) -> pd.DataFrame:
-    """Function that reproduce the .describe()"""
+    """Reproduce the .describe() of pandas on the numeric columns of df:
+    count, mean, std, min, 25%, 50%, 75% and max, computed without NaN.
+    Bonus fields, added after the mandatory ones:
+    - missing: number of NaN (or non numeric values) in the column
+    - range: max - min
+    - variance: std ** 2 (sample variance, divided by n - 1)
+    - IQR: 75% - 25%, spread of the middle half of the values
+    Return a DataFrame with one column per feature, one row per field."""
     numeric_cols = []
     for col in df.columns:
         try:
@@ -95,9 +117,9 @@ def ft_describe(df: pd.DataFrame) -> pd.DataFrame:
             pass
 
     data_stats = {}
-    stats_name = ['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']
 
     for col in numeric_cols:
+        len_col = len(df[col])
         values = pd.to_numeric(df[col], errors='coerce').dropna().tolist()
 
         if not values:
@@ -111,7 +133,12 @@ def ft_describe(df: pd.DataFrame) -> pd.DataFrame:
         p50 = ft_percentile(values, count, 0.50)
         p75 = ft_percentile(values, count, 0.75)
         max = ft_max(values)
-        data_stats[col] = [count, mean, std, min, p25, p50, p75, max]
+        miss = len_col - count
+        range = max - min
+        var = std ** 2
+        iqr = p75 - p25
+        data_stats[col] = [count, mean, std, min, p25,
+                           p50, p75, max, miss, range, var, iqr]
 
-    result_df = pd.DataFrame(data_stats, index=stats_name)
+    result_df = pd.DataFrame(data_stats, index=STATS_NAME)
     return result_df
