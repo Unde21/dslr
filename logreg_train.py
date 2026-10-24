@@ -1,8 +1,12 @@
 """Train a one-vs-all logistic regression to predict the Hogwarts House.
 
-Usage: python3 logreg_train.py dataset_train.csv"""
+Usage: python3 logreg_train.py dataset_train.csv [--batch SIZE]
+    no --batch: batch gradient descent (all students per update)
+    --batch 1:  stochastic gradient descent
+    --batch n:  mini-batch gradient descent"""
 
 import sys
+import argparse
 import pandas as pd
 import numpy as np
 import json
@@ -25,9 +29,10 @@ FEATURE = [
     "Herbology"
 ]
 
-LEARNING_RATE = 0.5
+LEARNING_RATE = 0.01
 N_ITERATIONS = 10000
 PRECISION = 1e-7
+SEED = 42
 
 
 def calc_mean_std(df: pd.DataFrame) -> dict:
@@ -100,27 +105,41 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
     return house_names, true_houses
 
 
-def train_classifier(X: np.ndarray, y: np.ndarray,
+def train_classifier(X: np.ndarray, y: np.ndarray, batch: int,
                      n_iterations=N_ITERATIONS, learning_rate=LEARNING_RATE,
                      precision=PRECISION) -> np.ndarray:
     """Train one binary classifier by gradient descent.
-    Start from theta = 0, then at each iteration:
-    predict h, compute the gradient, theta -= learning_rate * gradient.
+    Start from theta = 0. At each epoch, the students are shuffled
+    (the SEED makes the result reproducible), then split in batches
+    of `batch` students. For each batch: predict h, compute the gradient
+    on the batch, theta -= learning_rate * gradient.
+    - batch = None (all students): batch gradient descent
+    - batch = 1: stochastic gradient descent (SGD)
+    - batch = n: mini-batch gradient descent
+    At the end of each epoch, the cost is computed on all the students.
     Early stopping: stop when the cost changes by less than precision
-    between two iterations, or after n_iterations at most.
+    between two epochs, or after n_iterations epochs at most.
     The hyperparameters default to LEARNING_RATE, PRECISION
     and N_ITERATIONS.
-    Print the cost every 400 iterations to follow the training.
+    Print the cost every 400 epochs to follow the training.
     Return the trained theta, shape (features + 1,)."""
 
     theta = np.zeros(X.shape[1])
+    if batch is None:
+        batch = X.shape[0]
     delta_cost, tmp_cost, cost = 0, 0, 0
 
+    rng = np.random.default_rng(SEED)
     for i in range(n_iterations):
-        h = predict_proba(X, theta)
-        gradient = calc_gradient(X, h, y)
-        theta = theta - learning_rate * gradient
-        tmp_cost = calc_cost(h, y)
+        order = rng.permutation(X.shape[0])
+        for paquet in range(0, X.shape[0], batch):
+            index = order[paquet: paquet + batch]
+            X_batch, y_batch = X[index], y[index]
+            h_batch = predict_proba(X_batch, theta)
+            gradient = calc_gradient(X_batch, h_batch, y_batch)
+            theta = theta - learning_rate * gradient
+        h_full = predict_proba(X, theta)
+        tmp_cost = calc_cost(h_full, y)
         delta_cost = abs(cost - tmp_cost)
         cost = tmp_cost
         if delta_cost < precision:
@@ -130,19 +149,21 @@ def train_classifier(X: np.ndarray, y: np.ndarray,
 
         if i % 400 == 0:
             print(cost)
+
     else:
         print(f"reached max iterations, cost: {cost}.")
     return theta
 
 
 def train_one_vs_all(X: np.ndarray, house_names: list,
-                     true_houses: pd.Series, n_iterations=N_ITERATIONS,
+                     true_houses: pd.Series, batch: int,
+                     n_iterations=N_ITERATIONS,
                      learning_rate=LEARNING_RATE, precision=PRECISION) -> dict:
     """Train one binary classifier per house (one-vs-all):
     for each house, build its 0/1 labels from true_houses,
     then train a theta on X.
-    n_iterations, learning_rate and precision are passed
-    to train_classifier.
+    batch, n_iterations, learning_rate and precision are passed
+    to train_classifier (batch = None: batch gradient descent).
     Return a dict {house: theta}, theta as a numpy array."""
 
     # labels_per_house = []
@@ -153,7 +174,8 @@ def train_one_vs_all(X: np.ndarray, house_names: list,
         y = np.asarray(labels)
 
         print("=" * 64, f"\n{house}")
-        theta_houses[house] = train_classifier(X, y, n_iterations=n_iterations,
+        theta_houses[house] = train_classifier(X, y, batch,
+                                               n_iterations=n_iterations,
                                                learning_rate=learning_rate,
                                                precision=precision)
 
@@ -188,13 +210,14 @@ def save_data(norm_params: dict, theta_houses: dict, features=FEATURE) -> None:
 def main():
     """Main function that run the logistic regression training."""
 
-    ac = len(sys.argv)
-    if ac != 2:
-        print("Error: the program must take one .csv file as argument.",
-              file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Train the model on a dataset.")
+    parser.add_argument("dataset", help="path to the training .csv file.")
+    parser.add_argument("--batch", type=int, default=None,
+                        help="batch size (default: all students).")
+    args = parser.parse_args()
 
-    df = load_data(sys.argv[1])
+    df = load_data(args.dataset)
 
     house_names, true_houses = get_houses(df)
 
@@ -202,11 +225,15 @@ def main():
     # print(f"{x_norm.describe()}")
     X = add_bias_column(x_norm)
     # print(X)
-    theta_houses = train_one_vs_all(X, house_names, true_houses)
+    theta_houses = train_one_vs_all(X, house_names, true_houses, args.batch)
     # print("=" * 45, "\ntheta for each houses")
     # print(theta_houses)
     save_data(norm_params, theta_houses)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nlogistic regression training canceled.")
+        sys.exit(130)

@@ -5,7 +5,7 @@ Usage: python3 evaluate.py dataset_train.csv"""
 
 import pandas as pd
 import numpy as np
-import sys
+import argparse
 import io
 import contextlib
 from utils.load_data import load_data
@@ -56,10 +56,11 @@ def accuracy(predicted_houses, expected_houses) -> float:
 
 
 def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
-                   features: list, hyperparams: dict) -> float:
-    """Train the model on train with the given features and
-    hyperparams, then predict validation, normalized with the train
-    params only. The training logs are hidden.
+                   features: list, hyperparams: dict, batch: int) -> float:
+    """Train the model on train with the given features, hyperparams
+    and batch size (None: batch GD, 1: SGD, n: mini-batch), then
+    predict validation, normalized with the train params only.
+    The training logs are hidden.
     Return the accuracy on validation, between 0 and 1."""
 
     house_names, true_houses = get_houses(train)
@@ -67,7 +68,7 @@ def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
     X_train = add_bias_column(x_train_norm)
     with contextlib.redirect_stdout(io.StringIO()):
         theta_houses = train_one_vs_all(X_train, house_names, true_houses,
-                                        **hyperparams)
+                                        batch, **hyperparams)
     model = {
         "features": features,
         "norm_params": norm_params,
@@ -83,9 +84,11 @@ def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
 
 
 def cross_validate(df: pd.DataFrame, features: list,
-                   hyperparams: dict, seeds=SEEDS) -> list:
+                   hyperparams: dict, batch: int,
+                   seeds=SEEDS) -> list:
     """Repeat the split and the evaluation once per seed, so the score
     does not depend on one lucky or unlucky split.
+    batch is the batch size given to the training (see evaluate_split).
     Return the list of accuracies, one per seed."""
 
     scores = []
@@ -93,25 +96,31 @@ def cross_validate(df: pd.DataFrame, features: list,
         train, validation = split_dataset(df, train_ratio=TRAIN_RATIO,
                                           seed=seed)
         scores.append(evaluate_split(train, validation,
-                                     features, hyperparams))
+                                     features, hyperparams, batch))
     return scores
 
 
 def main():
     """Main function that run the evaluation."""
 
-    ac = len(sys.argv)
-    if ac != 2:
-        print("Error: the program must take one .csv file as argument.",
-              file=sys.stderr)
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Train the model on a dataset.")
+    parser.add_argument("dataset", help="path to the training .csv file.")
+    parser.add_argument("--batch", type=int, default=None,
+                        help="batch size (default: all students).")
+    args = parser.parse_args()
+    # ac = len(sys.argv)
+    # if ac != 2:
+    #     print("Error: the program must take one .csv file as argument.",
+    #           file=sys.stderr)
+    #     sys.exit(1)
 
-    df = load_data(sys.argv[1])
+    df = load_data(args.dataset)
     # features = [f for f in FEATURE if f != "Defense Against the Dark Arts"]
     # features = FEATURE + ["Arithmancy"] +
     # ["Astronomy"] + ["Potions"] + ["Care of Magical Creatures"]
     features = FEATURE
-    scores = cross_validate(df, features, HYPERPARAMS)
+    scores = cross_validate(df, features, HYPERPARAMS, args.batch)
     for seed, score in zip(SEEDS, scores):
         print(f"seed {seed}: {score * 100:.2f}%")
     mean = ft_vec_mean(np.asarray(scores))

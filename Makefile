@@ -4,6 +4,8 @@ PYTHON		= $(VENV)/bin/python3
 TRAIN		= datasets/dataset_train.csv
 TEST		= datasets/dataset_test.csv
 WEIGHTS		= weights.json
+BATCH		?=
+
 
 all: install
 
@@ -29,7 +31,7 @@ pair: $(VENV)
 plots: histogram scatter pair
 
 train: $(VENV)
-	$(PYTHON) logreg_train.py $(TRAIN)
+	$(PYTHON) logreg_train.py $(TRAIN) $(if $(BATCH),--batch $(BATCH))
 
 predict: $(VENV)
 	$(PYTHON) logreg_predict.py $(TEST) $(WEIGHTS)
