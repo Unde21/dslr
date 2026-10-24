@@ -22,7 +22,7 @@ SEEDS = [0, 1, 2, 3, 4]
 HYPERPARAMS = {
     "learning_rate": 0.4,
     "precision": 1e-7,
-    "n_iterations": 10000,
+    "max_epochs": 10000,
 }
 
 
@@ -56,7 +56,8 @@ def accuracy(predicted_houses, expected_houses) -> float:
 
 
 def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
-                   features: list, hyperparams: dict, batch: int) -> float:
+                   features: list, hyperparams: dict,
+                   batch_size: int) -> float:
     """Train the model on train with the given features, hyperparams
     and batch size (None: batch GD, 1: SGD, n: mini-batch), then
     predict validation, normalized with the train params only.
@@ -68,7 +69,7 @@ def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
     X_train = add_bias_column(x_train_norm)
     with contextlib.redirect_stdout(io.StringIO()):
         theta_houses = train_one_vs_all(X_train, house_names, true_houses,
-                                        batch, **hyperparams)
+                                        batch_size, **hyperparams)
     model = {
         "features": features,
         "norm_params": norm_params,
@@ -84,11 +85,11 @@ def evaluate_split(train: pd.DataFrame, validation: pd.DataFrame,
 
 
 def cross_validate(df: pd.DataFrame, features: list,
-                   hyperparams: dict, batch: int,
+                   hyperparams: dict, batch_size: int,
                    seeds=SEEDS) -> list:
     """Repeat the split and the evaluation once per seed, so the score
     does not depend on one lucky or unlucky split.
-    batch is the batch size given to the training (see evaluate_split).
+    batch_size is given to the training (see evaluate_split).
     Return the list of accuracies, one per seed."""
 
     scores = []
@@ -96,7 +97,7 @@ def cross_validate(df: pd.DataFrame, features: list,
         train, validation = split_dataset(df, train_ratio=TRAIN_RATIO,
                                           seed=seed)
         scores.append(evaluate_split(train, validation,
-                                     features, hyperparams, batch))
+                                     features, hyperparams, batch_size))
     return scores
 
 
@@ -104,10 +105,21 @@ def main():
     """Main function that run the evaluation."""
 
     parser = argparse.ArgumentParser(
-        description="Train the model on a dataset.")
+        description="Estimate the accuracy of the model by cross-validation"
+                    " on the training dataset.",
+        epilog="examples:\n"
+               "  python3 evaluate.py dataset_train.csv\n"
+               "  python3 evaluate.py dataset_train.csv --batch 32",
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("dataset", help="path to the training .csv file.")
     parser.add_argument("--batch", type=int, default=None,
-                        help="batch size (default: all students).")
+                        metavar="SIZE",
+                        help="number of students per update of theta:\n"
+                             "  (none) batch gradient descent, all students"
+                             " (default)\n"
+                             "  1      stochastic gradient descent (SGD)\n"
+                             "  n      mini-batch gradient descent,"
+                             " n students")
     args = parser.parse_args()
     # ac = len(sys.argv)
     # if ac != 2:

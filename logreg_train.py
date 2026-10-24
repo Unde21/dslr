@@ -30,7 +30,7 @@ FEATURE = [
 ]
 
 LEARNING_RATE = 0.01
-N_ITERATIONS = 10000
+MAX_EPOCHS = 10000
 PRECISION = 1e-7
 SEED = 42
 
@@ -105,65 +105,65 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
     return house_names, true_houses
 
 
-def train_classifier(X: np.ndarray, y: np.ndarray, batch: int,
-                     n_iterations=N_ITERATIONS, learning_rate=LEARNING_RATE,
+def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int,
+                     max_epochs=MAX_EPOCHS, learning_rate=LEARNING_RATE,
                      precision=PRECISION) -> np.ndarray:
     """Train one binary classifier by gradient descent.
     Start from theta = 0. At each epoch, the students are shuffled
     (the SEED makes the result reproducible), then split in batches
-    of `batch` students. For each batch: predict h, compute the gradient
+    of `batch_size` students. For each batch: predict h, compute the gradient
     on the batch, theta -= learning_rate * gradient.
-    - batch = None (all students): batch gradient descent
-    - batch = 1: stochastic gradient descent (SGD)
-    - batch = n: mini-batch gradient descent
+    - batch_size = None (all students): batch gradient descent
+    - batch_size = 1: stochastic gradient descent (SGD)
+    - batch_size = n: mini-batch gradient descent
     At the end of each epoch, the cost is computed on all the students.
     Early stopping: stop when the cost changes by less than precision
-    between two epochs, or after n_iterations epochs at most.
+    between two epochs, or after max_epochs epochs at most.
     The hyperparameters default to LEARNING_RATE, PRECISION
-    and N_ITERATIONS.
+    and MAX_EPOCHS.
     Print the cost every 400 epochs to follow the training.
     Return the trained theta, shape (features + 1,)."""
 
     theta = np.zeros(X.shape[1])
-    if batch is None:
-        batch = X.shape[0]
-    delta_cost, tmp_cost, cost = 0, 0, 0
+    if batch_size is None:
+        batch_size = X.shape[0]
+    prev_cost = 0
 
     rng = np.random.default_rng(SEED)
-    for i in range(n_iterations):
+    for epoch in range(max_epochs):
         order = rng.permutation(X.shape[0])
-        for paquet in range(0, X.shape[0], batch):
-            index = order[paquet: paquet + batch]
-            X_batch, y_batch = X[index], y[index]
+        for start in range(0, X.shape[0], batch_size):
+            batch_indices = order[start: start + batch_size]
+            X_batch, y_batch = X[batch_indices], y[batch_indices]
             h_batch = predict_proba(X_batch, theta)
             gradient = calc_gradient(X_batch, h_batch, y_batch)
             theta = theta - learning_rate * gradient
         h_full = predict_proba(X, theta)
-        tmp_cost = calc_cost(h_full, y)
-        delta_cost = abs(cost - tmp_cost)
-        cost = tmp_cost
+        new_cost = calc_cost(h_full, y)
+        delta_cost = abs(prev_cost - new_cost)
+        prev_cost = new_cost
         if delta_cost < precision:
-            print(f"converged at iteration {i},"
-                  f" cost: {cost}.")
+            print(f"converged at epoch {epoch},"
+                  f" cost: {new_cost}.")
             break
 
-        if i % 400 == 0:
-            print(cost)
+        if epoch % 400 == 0:
+            print(new_cost)
 
     else:
-        print(f"reached max iterations, cost: {cost}.")
+        print(f"reached max epochs, cost: {prev_cost}.")
     return theta
 
 
 def train_one_vs_all(X: np.ndarray, house_names: list,
-                     true_houses: pd.Series, batch: int,
-                     n_iterations=N_ITERATIONS,
+                     true_houses: pd.Series, batch_size: int,
+                     max_epochs=MAX_EPOCHS,
                      learning_rate=LEARNING_RATE, precision=PRECISION) -> dict:
     """Train one binary classifier per house (one-vs-all):
     for each house, build its 0/1 labels from true_houses,
     then train a theta on X.
-    batch, n_iterations, learning_rate and precision are passed
-    to train_classifier (batch = None: batch gradient descent).
+    batch_size, max_epochs, learning_rate and precision are passed
+    to train_classifier (batch_size = None: batch gradient descent).
     Return a dict {house: theta}, theta as a numpy array."""
 
     # labels_per_house = []
@@ -174,8 +174,8 @@ def train_one_vs_all(X: np.ndarray, house_names: list,
         y = np.asarray(labels)
 
         print("=" * 64, f"\n{house}")
-        theta_houses[house] = train_classifier(X, y, batch,
-                                               n_iterations=n_iterations,
+        theta_houses[house] = train_classifier(X, y, batch_size,
+                                               max_epochs=max_epochs,
                                                learning_rate=learning_rate,
                                                precision=precision)
 
@@ -211,10 +211,22 @@ def main():
     """Main function that run the logistic regression training."""
 
     parser = argparse.ArgumentParser(
-        description="Train the model on a dataset.")
+        description="Train a one-vs-all logistic regression and save the"
+                    " model to weights.json.",
+        epilog="examples:\n"
+               "  python3 logreg_train.py dataset_train.csv\n"
+               "  python3 logreg_train.py dataset_train.csv --batch 1\n"
+               "  python3 logreg_train.py dataset_train.csv --batch 32",
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("dataset", help="path to the training .csv file.")
     parser.add_argument("--batch", type=int, default=None,
-                        help="batch size (default: all students).")
+                        metavar="SIZE",
+                        help="number of students per update of theta:\n"
+                             "  (none) batch gradient descent, all students"
+                             " (default)\n"
+                             "  1      stochastic gradient descent (SGD)\n"
+                             "  n      mini-batch gradient descent,"
+                             " n students")
     args = parser.parse_args()
 
     df = load_data(args.dataset)
