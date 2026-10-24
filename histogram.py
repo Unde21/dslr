@@ -73,7 +73,7 @@ def disp_histogram(df: pd.DataFrame):
         plt.show()
     except KeyboardInterrupt:
         print("\nHistogram display closed.")
-        sys.exit(0)
+        sys.exit(130)
 
 
 def main():
@@ -90,4 +90,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nHistogram display closed.")
+        sys.exit(130)
