@@ -36,9 +36,6 @@ train: $(VENV)
 predict: $(VENV)
 	$(PYTHON) logreg_predict.py $(TEST) $(WEIGHTS)
 
-evaluate: $(VENV)
-	$(PYTHON) evaluate.py $(TRAIN)
-
 clean:
 	find . -name "__pycache__" -type d -prune -exec rm -rf {} +
 	rm -rf plots
