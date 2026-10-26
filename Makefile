@@ -7,12 +7,26 @@ WEIGHTS		= weights.json
 BATCH		?=
 
 
-all: install
+all: help 
 
 $(VENV): requirements.txt
 	python3 -m venv $(VENV)
 	$(PYTHON) -m pip install -q -r requirements.txt
 	touch $(VENV)
+
+help:
+	@echo "  make install    - Creates the virtual environment and installs dependencies"
+	@echo "  make describe   - Displays descriptive statistics of the data"
+	@echo "  make histogram  - Generates the histogram"
+	@echo "  make scatter    - Generates the scatter plot"
+	@echo "  make pair       - Generates the pair plot"
+	@echo "  make plots      - Generates all plots at once"
+	@echo "  make train      - Trains the logistic regression model"
+	@echo "  make predict    - Performs predictions with the model"
+	@echo "  make lint       - Checks code style with flake8"
+	@echo "  make clean      - Removes caches (__pycache__) and plots"
+	@echo "  make fclean     - Cleans everything (clean + model weights + venv)"
+	@echo "  make re         - Restarts everything from scratch (fclean + all)"
 
 install: $(VENV)
 
