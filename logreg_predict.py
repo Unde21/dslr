@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import json
 from pathlib import Path
-from utils.load_data import load_data
+from utils.load_data import load_data, check_columns
 from utils.normalize import normalize
 from utils.logreg import (add_bias_column,
                           predict_probas, predict_houses)
@@ -59,6 +59,7 @@ def apply_features(df: pd.DataFrame, weights: dict) -> pd.DataFrame:
     (the training mean and std, not recomputed on df).
     Return the normalized features."""
 
+    check_columns(df, weights["features"] + ["Index"])
     feature_df = df[weights["features"]]
     x_norm = normalize(feature_df, weights["norm_params"])
     return x_norm

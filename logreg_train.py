@@ -10,7 +10,8 @@ import argparse
 import pandas as pd
 import numpy as np
 import json
-from utils.load_data import load_data
+from utils.load_data import load_data, check_columns
+from utils.houses import get_houses
 from utils.stats import (ft_mean, ft_std, ft_count)
 from utils.logreg import (add_bias_column,
                           predict_proba, calc_cost, calc_gradient)
@@ -77,32 +78,11 @@ def fit_features(df: pd.DataFrame,
     {feature: {"mean": mean, "std": std}} used, to be saved
     for the prediction."""
 
+    check_columns(df, features)
     feature_df = df[features]
     norm_params = calc_mean_std(feature_df)
     x_norm = normalize(feature_df, norm_params)
     return x_norm, norm_params
-
-
-def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
-    """Get the houses from the 'Hogwarts House' column.
-    Return the sorted list of house names and the column itself
-    (one true house per student).
-    Exit if the column is missing or contains no house."""
-
-    try:
-        house_names = sorted(df["Hogwarts House"].dropna().unique())
-        true_houses = df["Hogwarts House"]
-    except KeyError:
-        print("Error: column 'Hogwarts House'"
-              " not found in the dataset.", file=sys.stderr)
-        sys.exit(1)
-
-    if not house_names:
-        print("Error: column 'Hogwarts House' contains no house."
-              " Use the training dataset.", file=sys.stderr)
-        sys.exit(1)
-
-    return house_names, true_houses
 
 
 def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int | None,
@@ -228,7 +208,7 @@ def main():
                              " n students")
     args = parser.parse_args()
     if args.batch is not None and args.batch < 1:
-        parser.error("--batch must be >- 1")
+        parser.error("--batch must be >= 1")
     df = load_data(args.dataset)
 
     house_names, true_houses = get_houses(df)

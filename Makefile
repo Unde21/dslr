@@ -61,6 +61,6 @@ fclean: clean
 lint: $(VENV)
 	$(PYTHON) -m flake8 --exclude=$(VENV),datasets .
 
-re: fclean all
+re: fclean install
 
-.PHONY: all install lint describe histogram scatter pair plots train predict evaluate clean fclean re
+.PHONY: all install lint help describe histogram scatter pair plots train predict clean fclean re

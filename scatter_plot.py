@@ -6,6 +6,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 from utils.load_data import load_data
+from utils.houses import get_houses
 
 
 def disp_scalter_plot(df: pd.DataFrame):
@@ -93,6 +94,7 @@ def main():
         sys.exit(1)
 
     df = load_data(sys.argv[1])
+    get_houses(df)
     disp_scalter_plot(df)
 
 

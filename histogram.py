@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.patches as mpatches
 from utils.load_data import load_data
+from utils.houses import get_houses
 
 
 def disp_histogram(df: pd.DataFrame):
@@ -51,6 +52,10 @@ def disp_histogram(df: pd.DataFrame):
                  fontsize=25, fontweight='bold', y=0.95)
 
     houses = sorted(df["Hogwarts House"].dropna().unique())
+    if not houses:
+        print("Error: column 'Hogwarts House' contains no house.",
+              file=sys.stderr)
+        sys.exit(1)
     colors = sns.color_palette("Set1", len(houses))
     patches = [mpatches.Patch(color=colors[i],
                               label=houses[i]) for i in range(len(houses))]
@@ -86,6 +91,7 @@ def main():
         sys.exit(1)
 
     df = load_data(sys.argv[1])
+    get_houses(df)
     disp_histogram(df)
 
 

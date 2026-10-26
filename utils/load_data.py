@@ -33,3 +33,13 @@ def load_data(path: str) -> pd.DataFrame:
     except (TypeError, ValueError) as error:
         print(f"Error: {error}", file=sys.stderr)
         sys.exit(1)
+
+
+def check_columns(df: pd.DataFrame, columns: list) -> None:
+    """Exit if one of `columns` is missing from df."""
+
+    missing = [col for col in columns if col not in df.columns]
+    if missing:
+        print(f"Error: missing column(s) in the dataset: "
+              f"{', '.join(missing)}.", file=sys.stderr)
+        sys.exit(1)

@@ -8,6 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from utils.load_data import load_data
+from utils.houses import get_houses
 
 
 def disp_pair_plot(df: pd.DataFrame):
@@ -86,6 +87,7 @@ def main():
         sys.exit(1)
 
     df = load_data(sys.argv[1])
+    get_houses(df)
     disp_pair_plot(df)
 
 
