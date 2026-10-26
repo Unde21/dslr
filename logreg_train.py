@@ -105,7 +105,7 @@ def get_houses(df: pd.DataFrame) -> tuple[list, pd.Series]:
     return house_names, true_houses
 
 
-def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int,
+def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int | None,
                      max_epochs=MAX_EPOCHS, learning_rate=LEARNING_RATE,
                      precision=PRECISION) -> np.ndarray:
     """Train one binary classifier by gradient descent.
@@ -126,7 +126,7 @@ def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int,
 
     theta = np.zeros(X.shape[1])
     if batch_size is None:
-        batch_size = X.shape[0]
+        batch_size = int(X.shape[0])
     prev_cost = 0
 
     rng = np.random.default_rng(SEED)
@@ -156,7 +156,7 @@ def train_classifier(X: np.ndarray, y: np.ndarray, batch_size: int,
 
 
 def train_one_vs_all(X: np.ndarray, house_names: list,
-                     true_houses: pd.Series, batch_size: int,
+                     true_houses: pd.Series, batch_size: int | None,
                      max_epochs=MAX_EPOCHS,
                      learning_rate=LEARNING_RATE, precision=PRECISION) -> dict:
     """Train one binary classifier per house (one-vs-all):
@@ -227,7 +227,8 @@ def main():
                              "  n      mini-batch gradient descent,"
                              " n students")
     args = parser.parse_args()
-
+    if args.batch is not None and args.batch < 1:
+        parser.error("--batch must be >- 1")
     df = load_data(args.dataset)
 
     house_names, true_houses = get_houses(df)
