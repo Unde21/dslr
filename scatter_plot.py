@@ -26,7 +26,7 @@ def disp_scalter_plot(df: pd.DataFrame):
     feature1 = best_match['Feature_1']
     feature2 = best_match['Feature_2']
     score = best_match['Correlation']
-
+    print(sorted_corr)
     print("Feature that are the most similar are :")
     print(f" -> {feature1} and {feature2} (Correlation: {score:.4f})")
 

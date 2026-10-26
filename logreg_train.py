@@ -166,7 +166,6 @@ def train_one_vs_all(X: np.ndarray, house_names: list,
     to train_classifier (batch_size = None: batch gradient descent).
     Return a dict {house: theta}, theta as a numpy array."""
 
-    # labels_per_house = []
     theta_houses = {}
     for house in house_names:
         labels = binary_labels(true_houses, house)
@@ -234,12 +233,8 @@ def main():
     house_names, true_houses = get_houses(df)
 
     x_norm, norm_params = fit_features(df)
-    # print(f"{x_norm.describe()}")
     X = add_bias_column(x_norm)
-    # print(X)
     theta_houses = train_one_vs_all(X, house_names, true_houses, args.batch)
-    # print("=" * 45, "\ntheta for each houses")
-    # print(theta_houses)
     save_data(norm_params, theta_houses)
 
 

@@ -50,7 +50,6 @@ def predict_probas(X: np.ndarray, model: dict) -> tuple[np.ndarray, list]:
         probas.append(proba)
 
     probas_matrix = np.asarray(probas).T
-    # print(probas_matrix.shape)
 
     return probas_matrix, house_names
 
@@ -61,11 +60,9 @@ def predict_houses(probas_matrix: np.ndarray, house_names: list) -> list:
     probas_matrix. Return one house name per student."""
 
     best_index = np.argmax(probas_matrix, axis=1)
-    # print(best_index)
     predicted_houses = []
     for i in best_index:
         predicted_houses.append(house_names[i])
-    # print(predicted_houses)
 
     return predicted_houses
 

@@ -121,12 +121,6 @@ def main():
                              "  n      mini-batch gradient descent,"
                              " n students")
     args = parser.parse_args()
-    # ac = len(sys.argv)
-    # if ac != 2:
-    #     print("Error: the program must take one .csv file as argument.",
-    #           file=sys.stderr)
-    #     sys.exit(1)
-
     df = load_data(args.dataset)
     # features = [f for f in FEATURE if f != "Defense Against the Dark Arts"]
     # features = FEATURE + ["Arithmancy"] +
